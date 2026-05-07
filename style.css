@@ -1,1 +1,495 @@
+/* ============================================
+   FOOD APP — style.css
+   Fuente: Poppins (Google Fonts)
+   Color principal:  #27ae60  (verde)
+   Color de acción:  #f39c12  (naranja)
+   ============================================ */
 
+/* — Import — */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   VARIABLES
+   ============================================ */
+:root {
+  /* Colores principales */
+  --color-primary:        #27ae60;
+  --color-primary-dark:   #229954;
+  --color-primary-light:  #e8f8ef;
+
+  --color-action:         #f39c12;
+  --color-action-dark:    #e08e0b;
+  --color-action-light:   #fff3e0;
+
+  /* Paleta de texto */
+  --color-text-heading:   #1a1a2e;
+  --color-text-body:      #444444;
+  --color-text-muted:     #888888;
+
+  /* Fondos */
+  --color-bg-page:        #f8f5f0;
+  --color-bg-card:        #ffffff;
+  --color-bg-header:      #1a1a2e;
+
+  /* Bordes */
+  --color-border:         #e0dbd4;
+
+  /* Tipografía */
+  --font-main:            'Poppins', sans-serif;
+
+  /* Radios */
+  --radius-sm:            8px;
+  --radius-md:            12px;
+  --radius-lg:            16px;
+  --radius-xl:            24px;
+
+  /* Sombra de card */
+  --shadow-card:          0 2px 10px rgba(0, 0, 0, 0.07);
+}
+
+/* ============================================
+   RESET BÁSICO
+   ============================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--color-bg-page);
+  color: var(--color-text-body);
+  line-height: 1.5;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   Simula pantalla de celular en escritorio
+   ============================================ */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--color-bg-page);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ============================================
+   TIPOGRAFÍA
+   ============================================ */
+h1, h2, h3, h4 {
+  font-family: var(--font-main);
+  color: var(--color-text-heading);
+  line-height: 1.25;
+}
+
+h1 { font-size: 1.5rem;   font-weight: 700; }
+h2 { font-size: 1.25rem;  font-weight: 600; }
+h3 { font-size: 1rem;     font-weight: 600; }
+h4 { font-size: 0.875rem; font-weight: 500; }
+
+p {
+  font-size: 0.9375rem;
+  color: var(--color-text-body);
+}
+
+.text-muted {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+
+/* Botón primario — color principal (verde) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-main);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover  { background-color: var(--color-primary-dark); }
+.btn-primary:active { transform: scale(0.97); }
+
+/* Botón de acción — naranja (añadir al carrito, etc.) */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  background-color: var(--color-action);
+  color: #ffffff;
+  font-family: var(--font-main);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.1s ease;
+}
+
+.btn-action:hover  { background-color: var(--color-action-dark); }
+.btn-action:active { transform: scale(0.97); }
+
+/* Botón pequeño "+" para cards */
+.btn-add {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-action);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  line-height: 1;
+}
+
+.btn-add:hover  { background-color: var(--color-action-dark); }
+.btn-add:active { transform: scale(0.93); }
+
+/* Botón outline — borde verde */
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background-color: transparent;
+  color: var(--color-primary);
+  font-family: var(--font-main);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.btn-outline:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* ============================================
+   CARDS (Tarjetas de platillos)
+   ============================================ */
+.card {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+/* Imagen del platillo */
+.card__image {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  background-color: var(--color-primary-light); /* placeholder */
+}
+
+/* Cuerpo de la card */
+.card__body {
+  padding: 12px 14px 14px;
+}
+
+.card__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.card__restaurant {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card__price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-heading);
+}
+
+/* Card en versión horizontal (para listas/ofertas) */
+.card--horizontal {
+  display: flex;
+  flex-direction: row;
+}
+
+.card--horizontal .card__image {
+  width: 100px;
+  height: auto;
+  min-height: 100px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.card--horizontal .card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ============================================
+   BADGE / ETIQUETA
+   ============================================ */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.badge--promo {
+  background-color: var(--color-action-light);
+  color: #b7600a;
+}
+
+.badge--nuevo {
+  background-color: var(--color-primary-light);
+  color: #1a7d47;
+}
+
+/* ============================================
+   RATING (Estrellas)
+   ============================================ */
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.rating__star {
+  color: var(--color-action);
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   CHIPS DE CATEGORÍA
+   ============================================ */
+.chip-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  /* esconde la scrollbar pero sigue scrolleable */
+  scrollbar-width: none;
+}
+
+.chip-list::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-family: var(--font-main);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-body);
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.chip.active,
+.chip:hover {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+/* ============================================
+   GRILLA DE CARDS (2 columnas)
+   ============================================ */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ============================================
+   SECTION HEADER
+   ============================================ */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+}
+
+.section-link {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* ============================================
+   BARRA DE NAVEGACIÓN INFERIOR
+   ============================================ */
+.nav-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--color-bg-card);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  padding: 10px 0 env(safe-area-inset-bottom, 10px);
+  z-index: 100;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.nav-item__icon {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  color: var(--color-primary);
+}
+
+/* ============================================
+   HEADER PRINCIPAL
+   ============================================ */
+.app-header {
+  background-color: var(--color-bg-header);
+  padding: 16px 20px 20px;
+  color: #ffffff;
+}
+
+.app-header__greeting {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+  margin-bottom: 2px;
+}
+
+.app-header__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ============================================
+   BARRA DE BÚSQUEDA
+   ============================================ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  margin-top: 14px;
+  cursor: text;
+}
+
+.search-bar__input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-main);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.search-bar__input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.mt-1  { margin-top: 0.5rem; }
+.mt-2  { margin-top: 1rem; }
+.mt-3  { margin-top: 1.5rem; }
+.mb-1  { margin-bottom: 0.5rem; }
+.mb-2  { margin-bottom: 1rem; }
+.mb-3  { margin-bottom: 1.5rem; }
+
+.px-page { padding-left: 16px; padding-right: 16px; }
+.py-2    { padding-top: 1rem; padding-bottom: 1rem; }
+
+.text-primary { color: var(--color-primary); }
+.text-action  { color: var(--color-action); }
+.text-heading { color: var(--color-text-heading); }
