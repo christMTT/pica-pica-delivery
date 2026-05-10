@@ -182,24 +182,35 @@ let menuData = [];
 
 // 2. Modificar la creación de la tarjeta para mostrar "GRATIS"
 function crearTarjetaPlato(plato) {
-    const imageUrl = plato.Imagen_Url || 'https://via.placeholder.com/480x280?text=Pica-Pica';
-    
-    // Si está logueado, el precio visual es 0
-    const precioMostrar = usuarioLogueado ? "0 (Suscrito)" : plato.Precio;
-    const textoBoton = usuarioLogueado ? "Pedir Gratis" : "+";
+  // Acceso seguro a la propiedad
+  const linkImagen = plato.Imagen_Url; 
+  
+  // Imprime en consola para ver qué está llegando realmente
+  console.log("Cargando imagen para:", plato.Nombre, "URL:", linkImagen);
 
-    return `
+  const imageUrl = (linkImagen && linkImagen.trim() !== "")
+    ? linkImagen
+    : 'https://via.placeholder.com/480x280?text=Sin+Imagen';
+
+  return `
     <article class="card">
-      <img class="card__image" src="${imageUrl}" alt="${plato.Nombre}" />
+      <img class="card__image" 
+           src="${imageUrl}" 
+           alt="${plato.Nombre}" 
+           style="width:100%; height:160px; object-fit:cover;"
+           onerror="this.src='https://via.placeholder.com/480x280?text=Error+al+cargar'">
       <div class="card__body">
         <h3 class="card__name">${plato.Nombre}</h3>
         <p class="text-muted">${plato.Categoria || 'General'}</p>
         <div class="card__footer">
-          <span class="card__price">Bs ${precioMostrar}</span>
-          <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio})">${textoBoton}</button>
+          <span class="card__price">Bs ${usuarioLogueado ? "0" : (plato.Precio || '0')}</span>
+          <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio})">
+            ${usuarioLogueado ? "Gratis" : "+"}
+          </button>
         </div>
       </div>
-    </article>`;
+    </article>
+  `;
 }
 
 function renderMenu(platos) {
