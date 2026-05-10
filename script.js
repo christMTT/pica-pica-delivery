@@ -134,3 +134,128 @@ async function registrarSuscripcion(sub) {
 //   Plan: "Semanal",
 //   Fecha: "2026-05-06"
 // });
+
+
+
+
+
+const menuContainer = document.getElementById('menu-container');
+const categoryButtonsContainer = document.getElementById('category-buttons');
+const subscriptionForm = document.getElementById('subscription-form');
+const subscriptionNameInput = document.getElementById('subscription-name');
+const subscriptionFeedback = document.getElementById('subscription-feedback');
+
+let menuData = [];
+
+function crearTarjetaPlato(plato) {
+  const imageUrl = plato.Imagen_Url && plato.Imagen_Url.startsWith('http')
+    ? plato.Imagen_Url
+    : 'https://via.placeholder.com/480x280?text=Pica-Pica';
+
+  return `
+    <article class="card">
+      <img class="card__image" src="${imageUrl}" alt="${plato.Nombre}" onerror="this.src='https://via.placeholder.com/480x280?text=Sin+imagen'" />
+      <div class="card__body">
+        <h3 class="card__name">${plato.Nombre}</h3>
+        <p class="text-muted">${plato.Categoria || 'General'}</p>
+        <p style="margin:10px 0 12px; color:var(--color-text-body);">${plato.Descripcion || ''}</p>
+        <div class="card__footer">
+          <span class="card__price">Bs ${plato.Precio || '0'}</span>
+          <button class="btn-add" type="button">+</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderMenu(platos) {
+  if (!menuContainer) return;
+  if (!platos || platos.length === 0) {
+    menuContainer.innerHTML = '<p class="text-muted">No hay platos disponibles en este momento.</p>';
+    return;
+  }
+
+  menuContainer.innerHTML = platos.map(crearTarjetaPlato).join('');
+}
+
+function renderCategoryButtons(platos) {
+  if (!categoryButtonsContainer) return;
+
+  const categorias = Array.from(new Set(platos.map(plato => plato.Categoria || 'Sin categoría')));
+  const botones = ['Todos', ...categorias];
+
+  categoryButtonsContainer.innerHTML = botones.map(nombre => {
+    const clase = nombre === 'Todos' ? 'btn-primary' : 'btn-outline';
+    return `<button type="button" class="${clase}" data-categoria="${nombre}">${nombre}</button>`;
+  }).join('');
+
+  categoryButtonsContainer.querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => {
+      categoryButtonsContainer.querySelectorAll('button').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+      });
+
+      button.classList.remove('btn-outline');
+      button.classList.add('btn-primary');
+
+      const categoria = button.dataset.categoria;
+      if (categoria === 'Todos') {
+        renderMenu(menuData);
+      } else {
+        const filtrados = menuData.filter(plato => (plato.Categoria || '').toLowerCase() === categoria.toLowerCase());
+        renderMenu(filtrados);
+      }
+    });
+  });
+}
+
+function mostrarFeedback(mensaje, esError = false) {
+  if (!subscriptionFeedback) return;
+  subscriptionFeedback.textContent = mensaje;
+  subscriptionFeedback.style.color = esError ? '#d64541' : 'var(--color-text-body)';
+}
+
+async function iniciarPagina() {
+  try {
+    const platos = await obtenerMenu();
+    menuData = Array.isArray(platos) ? platos : [];
+    renderCategoryButtons(menuData);
+    renderMenu(menuData);
+  } catch (error) {
+    console.error('Error cargando el menú:', error);
+    if (menuContainer) {
+      menuContainer.innerHTML = '<p class="text-muted">No se pudo cargar el menú. Intenta recargar la página.</p>';
+    }
+  }
+}
+
+if (subscriptionForm) {
+  subscriptionForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const nombre = subscriptionNameInput?.value.trim();
+
+    if (!nombre) {
+      mostrarFeedback('Por favor ingresa tu nombre.', true);
+      return;
+    }
+
+    mostrarFeedback('Registrando tu suscripción...');
+
+    try {
+      await registrarSuscripcion({
+        Nombre_vecino: nombre,
+        Plan: 'Semanal',
+        Fecha: new Date().toISOString().slice(0, 10)
+      });
+
+      mostrarFeedback(`¡Gracias ${nombre}! Tu plan semanal fue confirmado.`);
+      subscriptionForm.reset();
+    } catch (error) {
+      console.error('Error registrando suscripción:', error);
+      mostrarFeedback('No se pudo registrar la suscripción. Intenta nuevamente.', true);
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', iniciarPagina);
