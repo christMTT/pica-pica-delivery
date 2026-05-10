@@ -342,3 +342,46 @@ if (subscriptionForm) {
 }
 
 window.addEventListener('DOMContentLoaded', iniciarPagina);
+// ============================================
+// LÓGICA PARA AÑADIR PLATOS (ADMIN)
+// ============================================
+
+const addDishForm = document.getElementById('add-dish-form');
+const dishFeedback = document.getElementById('add-dish-feedback');
+
+if (addDishForm) {
+    addDishForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 1. Capturamos los datos del formulario
+        const nuevoPlato = {
+            ID: Date.now(), // ID único basado en tiempo
+            Nombre: document.getElementById('dish-name').value.trim(),
+            Categoria: document.getElementById('dish-category').value.trim(),
+            Precio: document.getElementById('dish-price').value,
+            Imagen_Url: document.getElementById('dish-img-url').value.trim(),
+            Descripcion: document.getElementById('dish-desc').value.trim()
+        };
+
+        dishFeedback.textContent = "Subiendo plato al menú...";
+        dishFeedback.style.color = "var(--color-primary)";
+
+        try {
+            // 2. Llamamos a la función que ya tenías en el script
+            const resultado = await agregarPlato(nuevoPlato);
+
+            if (resultado) {
+                dishFeedback.textContent = "✅ ¡Plato añadido con éxito!";
+                dishFeedback.style.color = "var(--color-primary-dark)";
+                addDishForm.reset(); // Limpiamos el formulario
+                
+                // Opcional: Recargar el menú si estás en la misma página
+                if (typeof iniciarPagina === 'function') iniciarPagina();
+            }
+        } catch (error) {
+            console.error("Error al añadir plato:", error);
+            dishFeedback.textContent = "❌ Error al conectar con la base de datos.";
+            dishFeedback.style.color = "#d64541";
+        }
+    });
+}
