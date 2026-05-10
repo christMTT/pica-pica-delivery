@@ -34,6 +34,18 @@
           <div id="menu-container" style="display:grid; gap:16px;"></div>
         </section>
 
+        <section id="orders-summary-section" style="background:#fff; padding:20px; border-radius:24px; box-shadow:var(--shadow-card); margin-bottom:28px;">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:14px; flex-wrap:wrap;">
+            <div>
+              <h2>Resumen de pedidos</h2>
+              <p class="text-muted">Muestra los pedidos diarios por hora para organizar la cocina.</p>
+            </div>
+            <button id="export-summary-btn" class="btn-action" type="button">Exportar resumen</button>
+          </div>
+          <p id="summary-status" class="text-muted" style="min-height:1.2rem; margin-bottom:14px;">Cargando resumen...</p>
+          <div id="orders-summary-container"></div>
+        </section>
+
         <section id="subscription-section" style="background:#fff; padding:20px; border-radius:24px; box-shadow:var(--shadow-card);">
           <h2>Suscripción semanal</h2>
           <p class="text-muted" style="margin-bottom:18px;">Recibe el plan semanal de comida directo a tu buzón.</p>
@@ -51,5 +63,114 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+      const ordersSummaryContainer = document.getElementById('orders-summary-container');
+      const exportSummaryBtn = document.getElementById('export-summary-btn');
+      const summaryStatus = document.getElementById('summary-status');
+      let pedidosDiarios = [];
+
+      function formatHora(hora) {
+        return hora ? hora.padStart(5, '0') : 'Sin hora';
+      }
+
+      function agruparPorHora(pedidos) {
+        return pedidos.reduce((acc, pedido) => {
+          const hora = pedido.Hora_Entrega ? pedido.Hora_Entrega.slice(0, 5) : 'Sin hora';
+          if (!acc[hora]) acc[hora] = [];
+          acc[hora].push(pedido);
+          return acc;
+        }, {});
+      }
+
+      function construirResumenPedidos(pedidos) {
+        if (!pedidos || pedidos.length === 0) {
+          return '<p class="text-muted">No hay pedidos para el día de hoy.</p>';
+        }
+
+        const grupos = agruparPorHora(pedidos);
+        return Object.keys(grupos)
+          .sort((a, b) => (a === 'Sin hora' ? 1 : b === 'Sin hora' ? -1 : a.localeCompare(b)))
+          .map(hora => {
+            const items = grupos[hora];
+            return `
+              <div style="margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;">
+                  <h3 style="font-size:1rem; margin:0;">${formatHora(hora)}</h3>
+                  <span class="badge badge--nuevo" style="padding:5px 12px;">${items.length} pedido${items.length === 1 ? '' : 's'}</span>
+                </div>
+                <div style="background:var(--color-bg-page); border:1px solid var(--color-border); border-radius:18px; padding:14px;">
+                  ${items.map(pedido => `
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                      <div>
+                        <p style="margin:0 0 4px; font-weight:600; color:var(--color-text-heading);">${pedido.Nombre_Cliente || 'Cliente'} · ${pedido.Nombre_Plato || 'Plato'}</p>
+                        <p class="text-muted" style="margin:0; font-size:0.9rem;">Estado: ${pedido.Estado || 'pendiente'}</p>
+                      </div>
+                      <div style="text-align:right; min-width:70px;">
+                        <p style="margin:0; font-weight:700; color:var(--color-text-heading);">Bs ${pedido.Precio || '0'}</p>
+                        <p class="text-muted" style="margin:4px 0 0; font-size:0.82rem;">${pedido.Fecha || ''}</p>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      function descargarCsv(nombre, contenido) {
+        const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.setAttribute('download', nombre);
+        enlace.style.display = 'none';
+        document.body.appendChild(enlace);
+        enlace.click();
+        document.body.removeChild(enlace);
+        URL.revokeObjectURL(url);
+      }
+
+      function generarCsvPedidos(pedidos) {
+        const campos = ['Hora_Entrega', 'Nombre_Cliente', 'Nombre_Plato', 'Estado', 'Precio', 'Fecha'];
+        const filas = pedidos.map(pedido => campos.map(campo => `"${(pedido[campo] || '').toString().replace(/"/g, '""')}"`).join(','));
+        return [campos.join(','), ...filas].join('\n');
+      }
+
+      async function cargarResumenPedidos() {
+        if (!ordersSummaryContainer || !summaryStatus) return;
+
+        summaryStatus.textContent = 'Cargando resumen...';
+        try {
+          const pedidos = await obtenerPedidos();
+          pedidosDiarios = Array.isArray(pedidos) ? pedidos : [];
+          const today = new Date().toISOString().slice(0, 10);
+          const pedidosHoy = pedidosDiarios.filter(pedido => (pedido.Fecha || '').startsWith(today));
+
+          ordersSummaryContainer.innerHTML = construirResumenPedidos(pedidosHoy);
+          summaryStatus.textContent = pedidosHoy.length ? 'Pedidos organizados por hora' : 'No hay pedidos registrados para hoy.';
+        } catch (error) {
+          console.error('Error cargando resumen de pedidos:', error);
+          summaryStatus.textContent = 'No se pudo cargar el resumen. Intenta recargar la página.';
+          ordersSummaryContainer.innerHTML = '';
+        }
+      }
+
+      if (exportSummaryBtn) {
+        exportSummaryBtn.addEventListener('click', () => {
+          if (!pedidosDiarios || pedidosDiarios.length === 0) {
+            alert('No hay pedidos para exportar.');
+            return;
+          }
+
+          const today = new Date().toISOString().slice(0, 10);
+          const pedidosHoy = pedidosDiarios.filter(pedido => (pedido.Fecha || '').startsWith(today));
+          const csv = generarCsvPedidos(pedidosHoy);
+          descargarCsv(`resumen-pedidos-${today}.csv`, csv);
+        });
+      }
+
+      window.addEventListener('DOMContentLoaded', cargarResumenPedidos);
+    </script>
   </body>
 </html>
