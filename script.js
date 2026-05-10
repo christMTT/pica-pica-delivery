@@ -9,6 +9,39 @@ const API_URL = "https://sheetdb.io/api/v1/iqzxj7h81qhi5";
 // =====================
 // MENÚ
 // =====================
+let usuarioLogueado = null; // Guardará el nombre si tiene suscripción
+
+// 1. Función para verificar si el usuario es suscriptor
+async function verificarYActivarModo() {
+    const nombreInput = document.getElementById('check-user-name').value.trim();
+    const msg = document.getElementById('sub-status-msg');
+
+    if (!nombreInput) return;
+
+    msg.textContent = "Verificando...";
+
+    try {
+        const suscripciones = await obtenerSuscripciones();
+        // Buscamos si el nombre existe en la lista de suscriptores
+        const esSuscriptor = suscripciones.find(s => 
+            s.Nombre_vecino.toLowerCase() === nombreInput.toLowerCase()
+        );
+
+        if (esSuscriptor) {
+            usuarioLogueado = esSuscriptor.Nombre_vecino;
+            msg.textContent = `✅ Plan Semanal Activo. ¡Hola ${usuarioLogueado}! Tus platos hoy son gratis.`;
+            msg.style.color = "var(--color-primary-dark)";
+            renderMenu(menuData); // Volvemos a renderizar para mostrar "Gratis"
+        } else {
+            usuarioLogueado = null;
+            msg.textContent = "❌ No tienes una suscripción activa con ese nombre.";
+            msg.style.color = "#d64541";
+            renderMenu(menuData);
+        }
+    } catch (error) {
+        msg.textContent = "Error al verificar. Intenta de nuevo.";
+    }
+}
 
 // Obtener todos los platos del menú
 async function obtenerMenu() {
@@ -147,25 +180,26 @@ const subscriptionFeedback = document.getElementById('subscription-feedback');
 
 let menuData = [];
 
+// 2. Modificar la creación de la tarjeta para mostrar "GRATIS"
 function crearTarjetaPlato(plato) {
-  const imageUrl = plato.Imagen_Url && plato.Imagen_Url.startsWith('http')
-    ? plato.Imagen_Url
-    : 'https://via.placeholder.com/480x280?text=Pica-Pica';
+    const imageUrl = plato.Imagen_Url || 'https://via.placeholder.com/480x280?text=Pica-Pica';
+    
+    // Si está logueado, el precio visual es 0
+    const precioMostrar = usuarioLogueado ? "0 (Suscrito)" : plato.Precio;
+    const textoBoton = usuarioLogueado ? "Pedir Gratis" : "+";
 
-  return `
+    return `
     <article class="card">
-      <img class="card__image" src="${imageUrl}" alt="${plato.Nombre}" onerror="this.src='https://via.placeholder.com/480x280?text=Sin+imagen'" />
+      <img class="card__image" src="${imageUrl}" alt="${plato.Nombre}" />
       <div class="card__body">
         <h3 class="card__name">${plato.Nombre}</h3>
         <p class="text-muted">${plato.Categoria || 'General'}</p>
-        <p style="margin:10px 0 12px; color:var(--color-text-body);">${plato.Descripcion || ''}</p>
         <div class="card__footer">
-          <span class="card__price">Bs ${plato.Precio || '0'}</span>
-          <button class="btn-add" type="button">+</button>
+          <span class="card__price">Bs ${precioMostrar}</span>
+          <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio})">${textoBoton}</button>
         </div>
       </div>
-    </article>
-  `;
+    </article>`;
 }
 
 function renderMenu(platos) {
@@ -215,6 +249,44 @@ function mostrarFeedback(mensaje, esError = false) {
   subscriptionFeedback.textContent = mensaje;
   subscriptionFeedback.style.color = esError ? '#d64541' : 'var(--color-text-body)';
 }
+// 3. Función para procesar el pedido al hacer clic en "+"
+async function procesarPedidoRapido(nombrePlato, precioOriginal) {
+    let nombreCliente = usuarioLogueado;
+    let precioFinal = usuarioLogueado ? 0 : precioOriginal;
+
+    // Si no está identificado, le pedimos su nombre para el pedido normal
+    if (!usuarioLogueado) {
+        nombreCliente = prompt("Ingresa tu nombre para el pedido:");
+        if (!nombreCliente) return;
+    }
+
+    const nuevoPedido = {
+        ID_Pedido: Date.now(), // Generamos un ID único temporal
+        Nombre_Cliente: nombreCliente,
+        Nombre_Plato: nombrePlato,
+        Hora_Entrega: "Por confirmar",
+        Fecha: new Date().toISOString().slice(0, 10),
+        Estado: "pendiente",
+        Precio: precioFinal
+    };
+
+    try {
+        alert("Enviando pedido...");
+        await crearPedido(nuevoPedido);
+        alert(`¡Pedido realizado! ${nombrePlato} por Bs ${precioFinal}`);
+        if(typeof cargarResumenPedidos === 'function') cargarResumenPedidos(); // Recarga el resumen si existe
+    } catch (error) {
+        alert("Hubo un error al procesar el pedido.");
+    }
+}
+
+// 4. Asignar el evento al botón de verificar cuando cargue la página
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCheck = document.getElementById('btn-check-sub');
+    if (btnCheck) {
+        btnCheck.addEventListener('click', verificarYActivarModo);
+    }
+});
 
 async function iniciarPagina() {
   try {
