@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pica Pica Delivery</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header style="padding: 24px 20px;">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+          <div style="width:48px; height:48px; border-radius:16px; overflow:hidden; background-color:var(--color-primary); display:flex; align-items:center; justify-content:center;">
+            <img src="assets/image.png" alt="Logo Pica Pica" style="width:100%; height:100%; object-fit:cover;" />
+          </div>
+          <div>
+            <h1 style="margin-bottom:6px;">Pica-Pica</h1>
+            <p class="text-muted" style="margin:0;">Menú del vecino y suscripción semanal</p>
+          </div>
+        </div>
+      </header>
+
+      <main style="padding: 0 20px 30px;">
+        <section id="menu-section" style="margin-bottom:28px;">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px;">
+            <div>
+              <h2>Menú del día</h2>
+              <p class="text-muted">Elige entre las opciones disponibles y filtra por tipo.</p>
+            </div>
+          </div>
+
+          <div id="category-buttons" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px;"></div>
+
+          <div id="menu-container" style="display:grid; gap:16px;"></div>
+        </section>
+
+        <section id="subscription-section" style="background:#fff; padding:20px; border-radius:24px; box-shadow:var(--shadow-card);">
+          <h2>Suscripción semanal</h2>
+          <p class="text-muted" style="margin-bottom:18px;">Recibe el plan semanal de comida directo a tu buzón.</p>
+
+          <form id="subscription-form" style="display:grid; gap:14px;">
+            <label style="display:block; font-weight:600; color:var(--color-text-heading);">
+              Nombre del vecino
+              <input id="subscription-name" type="text" placeholder="Ingresa tu nombre" required style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid var(--color-border); border-radius:16px; font-family:inherit; font-size:0.95rem;" />
+            </label>
+            <button type="submit" class="btn-primary">Confirmar Plan Semanal</button>
+            <p id="subscription-feedback" class="text-muted" style="min-height:1.2rem;"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
