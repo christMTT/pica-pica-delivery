@@ -46,7 +46,7 @@
           <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:14px; flex-wrap:wrap;">
             <div>
               <h2>Resumen de pedidos</h2>
-              <p class="text-muted">Muestra los pedidos diarios por hora para organizar la cocina.</p>
+              <p class="text-muted">Se calcula el tiempo de entrega usando la distancia y se muestra la hora estimada en cada pedido.</p>
             </div>
             <button id="export-summary-btn" class="btn-action" type="button">Exportar resumen</button>
           </div>
@@ -78,12 +78,32 @@
       let pedidosDiarios = [];
 
       function formatHora(hora) {
-        return hora ? hora.padStart(5, '0') : 'Sin hora';
+        return hora ? hora.toString().padStart(5, '0') : 'Sin hora';
+      }
+
+      function calcularTiempoEntrega(distanciaKm, velocidadKmH = 25) {
+        const distancia = Number(distanciaKm);
+        if (!distancia || distancia <= 0) return null;
+        return Math.max(1, Math.ceil((distancia / velocidadKmH) * 60));
+      }
+
+      function obtenerHoraEstimacion(minutosAdicionales) {
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() + Number(minutosAdicionales));
+        const horas = String(ahora.getHours()).padStart(2, '0');
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        return `${horas}:${minutos}`;
+      }
+
+      function formatearDuracion(minutos) {
+        return minutos ? `${minutos} min` : 'Por calcular';
       }
 
       function agruparPorHora(pedidos) {
         return pedidos.reduce((acc, pedido) => {
-          const hora = pedido.Hora_Entrega ? pedido.Hora_Entrega.slice(0, 5) : 'Sin hora';
+          const hora = pedido.Hora_Entrega && /^\d{1,2}:\d{2}$/.test(pedido.Hora_Entrega)
+            ? pedido.Hora_Entrega.slice(0, 5)
+            : 'Sin hora';
           if (!acc[hora]) acc[hora] = [];
           acc[hora].push(pedido);
           return acc;
@@ -106,24 +126,75 @@
                   <h3 style="font-size:1rem; margin:0;">${formatHora(hora)}</h3>
                   <span class="badge badge--nuevo" style="padding:5px 12px;">${items.length} pedido${items.length === 1 ? '' : 's'}</span>
                 </div>
-                <div style="background:var(--color-bg-page); border:1px solid var(--color-border); border-radius:18px; padding:14px;">
-                  ${items.map(pedido => `
-                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
-                      <div>
-                        <p style="margin:0 0 4px; font-weight:600; color:var(--color-text-heading);">${pedido.Nombre_Cliente || 'Cliente'} · ${pedido.Nombre_Plato || 'Plato'}</p>
-                        <p class="text-muted" style="margin:0; font-size:0.9rem;">Estado: ${pedido.Estado || 'pendiente'}</p>
+                <div class="order-card">
+                  ${items.map(pedido => {
+                    const distancia = Number(pedido.Distancia_KM) || null;
+                    const tiempoEstimado = Number(pedido.Tiempo_Estimado_Min) || calcularTiempoEntrega(distancia);
+                    const horaEstimacion = tiempoEstimado ? obtenerHoraEstimacion(tiempoEstimado) : 'Por confirmar';
+                    const estaRetrasado = (pedido.Estado_Entrega || '').toLowerCase().includes('retras');
+
+                    return `
+                      <div style="margin-bottom:18px;">
+                        <div class="order-card__header">
+                          <div>
+                            <p style="margin:0 0 4px; font-weight:600; color:var(--color-text-heading);">${pedido.Nombre_Cliente || 'Cliente'} · ${pedido.Nombre_Plato || 'Plato'}</p>
+                            <p class="text-muted" style="margin:0; font-size:0.9rem;">Estado general: ${pedido.Estado || 'pendiente'}</p>
+                            <p class="text-muted" style="margin:4px 0 0; font-size:0.85rem;">Estado de entrega: ${pedido.Estado_Entrega || 'Pendiente'}</p>
+                          </div>
+                          <div style="text-align:right; min-width:85px;">
+                            <p style="margin:0; font-weight:700; color:var(--color-text-heading);">Bs ${pedido.Precio || '0'}</p>
+                            <p class="text-muted" style="margin:4px 0 0; font-size:0.82rem;">${pedido.Fecha || ''}</p>
+                          </div>
+                        </div>
+                        <div class="order-card__meta">
+                          <span>ETA: ${horaEstimacion}</span>
+                          <span>${formatearDuracion(tiempoEstimado)}</span>
+                          <span>Distancia: ${distancia ? distancia.toFixed(1) + ' km' : 'Pendiente'}</span>
+                          ${estaRetrasado ? '<span class="order-card__tag order-card__delay">Retrasado</span>' : ''}
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; margin-top:12px; gap:10px; flex-wrap:wrap;">
+                          <button class="btn-outline btn-small" type="button" onclick="reportarRetraso('${pedido.ID_Pedido}')">Reportar retraso</button>
+                        </div>
                       </div>
-                      <div style="text-align:right; min-width:70px;">
-                        <p style="margin:0; font-weight:700; color:var(--color-text-heading);">Bs ${pedido.Precio || '0'}</p>
-                        <p class="text-muted" style="margin:4px 0 0; font-size:0.82rem;">${pedido.Fecha || ''}</p>
-                      </div>
-                    </div>
-                  `).join('')}
+                    `;
+                  }).join('')}
                 </div>
               </div>
             `;
           })
           .join('');
+      }
+
+      async function reportarRetraso(idPedido) {
+        const minutosRetraso = Number(prompt('Ingresa los minutos de retraso adicionales:'));
+        if (!idPedido || Number.isNaN(minutosRetraso) || minutosRetraso <= 0) return;
+
+        try {
+          await actualizarRetrasoPedido(idPedido, minutosRetraso);
+          alert('El retraso se actualizó correctamente.');
+          if (typeof cargarResumenPedidos === 'function') cargarResumenPedidos();
+        } catch (error) {
+          console.error('No se pudo actualizar el retraso:', error);
+          alert('Error al actualizar el retraso. Intenta de nuevo.');
+        }
+      }
+
+      async function actualizarRetrasoPedido(idPedido, minutosRetraso) {
+        const pedidoExistente = pedidosDiarios.find(p => p.ID_Pedido === idPedido || p.ID === idPedido);
+        const distancia = Number(pedidoExistente?.Distancia_KM) || 0;
+        const tiempoActual = Number(pedidoExistente?.Tiempo_Estimado_Min) || calcularTiempoEntrega(distancia) || 0;
+        const nuevoTiempo = tiempoActual + minutosRetraso;
+
+        const res = await fetch(`${API_URL}/ID_Pedido/${idPedido}?sheet=Pedidos`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: {
+            Tiempo_Estimado_Min: nuevoTiempo,
+            Estado_Entrega: 'Retrasado',
+            Hora_Entrega: obtenerHoraEstimacion(nuevoTiempo)
+          }})
+        });
+        return await res.json();
       }
 
       function descargarCsv(nombre, contenido) {
