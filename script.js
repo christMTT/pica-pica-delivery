@@ -28,6 +28,15 @@ async function verificarYActivarModo() {
         );
 
         if (esSuscriptor) {
+            // --- MODIFICADO: Verificar que la suscripción esté Activa ---
+            if (esSuscriptor.Estado_Suscripcion === "Pausado") {
+                usuarioLogueado = null;
+                msg.textContent = "⏸️ Tu suscripción está pausada. Contacta soporte para reactivarla.";
+                msg.style.color = "#e67e22";
+                renderMenu(menuData);
+                return;
+            }
+
             usuarioLogueado = esSuscriptor.Nombre_vecino;
             msg.textContent = `✅ Plan Semanal Activo. ¡Hola ${usuarioLogueado}! Tus platos hoy son gratis.`;
             msg.style.color = "var(--color-primary-dark)";
@@ -127,50 +136,156 @@ async function obtenerSuscripciones() {
   return data;
 }
 
-// Registrar nueva suscripción
+// Registrar nueva suscripción (MODIFICADO: incluye Estado y Plan_ID)
 async function registrarSuscripcion(sub) {
   const res = await fetch(`${API_URL}?sheet=Suscripciones`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: [sub] })
+    body: JSON.stringify({ data: [{
+      ...sub,
+      Estado_Suscripcion: "Activo",
+      Plan_ID: "P01"
+    }] })
+  });
+  return await res.json();
+}
+
+// =============================================
+// HU2: Pausar / Reanudar suscripción (PUT)
+// =============================================
+
+// Actualiza el Estado_Suscripcion de un usuario
+async function actualizarEstadoSuscripcion(nombreVecino, nuevoEstado) {
+  const res = await fetch(`${API_URL}/Nombre_vecino/${nombreVecino}?sheet=Suscripciones`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: { Estado_Suscripcion: nuevoEstado } })
+  });
+  return await res.json();
+}
+
+// Alterna entre Activo y Pausado automáticamente
+async function toggleSuscripcion(nombreVecino) {
+  try {
+    const suscripciones = await obtenerSuscripciones();
+    const usuario = suscripciones.find(s =>
+      s.Nombre_vecino.toLowerCase() === nombreVecino.toLowerCase()
+    );
+
+    if (!usuario) {
+      alert("No se encontró la suscripción.");
+      return;
+    }
+
+    const estadoActual = usuario.Estado_Suscripcion || "Activo";
+    const nuevoEstado = estadoActual === "Activo" ? "Pausado" : "Activo";
+
+    await actualizarEstadoSuscripcion(usuario.Nombre_vecino, nuevoEstado);
+    alert(`Suscripción ${nuevoEstado === "Activo" ? "reactivada ✅" : "pausada ⏸️"}`);
+    return nuevoEstado;
+  } catch (error) {
+    console.error("Error al cambiar estado:", error);
+    alert("Error al actualizar la suscripción.");
+  }
+}
+
+// =============================================
+// HU4: Asignar repartidor a un pedido (PUT)
+// =============================================
+
+// Asigna repartidor, distancia y calcula tiempo estimado
+async function asignarRepartidor(idPedido, idRepartidor, distanciaKM) {
+  // Velocidad promedio: Bici ~15 km/h, Moto ~30 km/h
+  // Buscamos el vehículo del repartidor para calcular mejor
+  let velocidad = 15; // Por defecto bici
+  try {
+    const repartidores = await obtenerRepartidores();
+    const repartidor = repartidores.find(r => r.ID_Repartidor === idRepartidor);
+    if (repartidor && repartidor.Vehiculo === "Moto") {
+      velocidad = 30;
+    }
+  } catch (e) {
+    console.warn("No se pudo verificar vehículo, usando velocidad de bici.");
+  }
+
+  const tiempoEstimado = Math.ceil((distanciaKM / velocidad) * 60);
+
+  const res = await fetch(`${API_URL}/ID_Pedido/${idPedido}?sheet=Pedidos`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      data: {
+        ID_Repartidor: idRepartidor,
+        Distancia_KM: distanciaKM,
+        Tiempo_Estimado_Min: tiempoEstimado,
+        Estado_Entrega: "En Camino"
+      }
+    })
+  });
+  return await res.json();
+}
+
+// Actualizar solo el estado de entrega
+async function actualizarEstadoEntrega(idPedido, nuevoEstado) {
+  const res = await fetch(`${API_URL}/ID_Pedido/${idPedido}?sheet=Pedidos`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: { Estado_Entrega: nuevoEstado } })
+  });
+  return await res.json();
+}
+
+// =====================
+// REPARTIDORES
+// =====================
+
+// Obtener todos los repartidores
+async function obtenerRepartidores() {
+  const res = await fetch(`${API_URL}?sheet=Repartidores`);
+  return await res.json();
+}
+
+// Obtener solo los disponibles
+async function obtenerRepartidoresDisponibles() {
+  const res = await fetch(`${API_URL}/search?Estado_Disponibilidad=Disponible&sheet=Repartidores`);
+  return await res.json();
+}
+
+// Cambiar disponibilidad de un repartidor
+async function actualizarDisponibilidadRepartidor(idRepartidor, nuevoEstado) {
+  const res = await fetch(`${API_URL}/ID_Repartidor/${idRepartidor}?sheet=Repartidores`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: { Estado_Disponibilidad: nuevoEstado } })
   });
   return await res.json();
 }
 
 
 // =====================
-// EJEMPLO DE USO
+// EJEMPLO DE USO - FUNCIONES NUEVAS
 // =====================
-// 
-// // Cargar menú al iniciar la página:
-// obtenerMenu().then(platos => {
-//   platos.forEach(plato => {
-//     console.log(plato.Nombre, plato.Precio);
-//   });
-// });
 //
-// // Crear un pedido:
-// crearPedido({
-//   ID_Pedido: 1,
-//   Nombre_Cliente: "María López",
-//   Nombre_Plato: "Sándwich de Pollo",
-//   Hora_Entrega: "12:30",
-//   Fecha: "2026-05-06",
-//   Estado: "pendiente",
-//   Precio: 25
-// });
+// // HU2 - Pausar suscripción de un usuario:
+// actualizarEstadoSuscripcion("Virgilio", "Pausado");
 //
-// // Registrar suscripción:
-// registrarSuscripcion({
-//   ID: 1,
-//   Nombre_vecino: "Carlos Pérez",
-//   Plan: "Semanal",
-//   Fecha: "2026-05-06"
-// });
+// // HU2 - Alternar estado (si está Activo lo pausa, si está Pausado lo activa):
+// toggleSuscripcion("Virgilio");
+//
+// // HU4 - Asignar repartidor R001 a un pedido, distancia 2.5 km:
+// asignarRepartidor("1778377164161", "R001", 2.5);
+//
+// // Marcar pedido como entregado:
+// actualizarEstadoEntrega("1778377164161", "Entregado");
+//
+// // Ver repartidores disponibles:
+// obtenerRepartidoresDisponibles().then(r => console.log(r));
+//
 
 
-
-
+// =====================
+// INTERFAZ - MENÚ Y TARJETAS
+// =====================
 
 const menuContainer = document.getElementById('menu-container');
 const categoryButtonsContainer = document.getElementById('category-buttons');
@@ -278,7 +393,12 @@ async function procesarPedidoRapido(nombrePlato, precioOriginal) {
         Hora_Entrega: "Por confirmar",
         Fecha: new Date().toISOString().slice(0, 10),
         Estado: "pendiente",
-        Precio: precioFinal
+        Precio: precioFinal,
+        // Nuevas columnas inicializadas
+        ID_Repartidor: "",
+        Distancia_KM: "",
+        Tiempo_Estimado_Min: "",
+        Estado_Entrega: "Pendiente"
     };
 
     try {
