@@ -21,14 +21,25 @@
       </header>
 
       <main style="padding: 0 20px 30px;">
+        <div class="notification-banner">
+          <div class="notification-banner__icon-box">
+            <img src="assets/grupo6.png" alt="Icono Delivery" class="notification-banner__icon" />
+          </div>
+          <div class="notification-banner__content">
+            <h3 class="notification-banner__title">Pica-Pica Delivery</h3>
+            <p class="notification-banner__text">Nuevo pedido sobre uno de tus planes</p>
+          </div>
+        </div>
+
         <section id="login-section" style="background:var(--color-primary-light); padding:15px; border-radius:20px; margin-bottom:20px; border: 1px solid var(--color-primary);">
-    <h3 style="margin-bottom:8px; color:var(--color-primary-dark);">¿Tienes Plan Semanal?</h3>
-    <div style="display:flex; gap:10px;">
-        <input id="check-user-name" type="text" placeholder="Ingresa tu nombre" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--color-border);">
-        <button id="btn-check-sub" class="btn-action" style="padding:10px;">Verificar</button>
-    </div>
-    <p id="sub-status-msg" class="text-muted" style="margin-top:8px; font-weight:600;"></p>
-</section>
+          <h3 style="margin-bottom:8px; color:var(--color-primary-dark);">¿Tienes Plan Semanal?</h3>
+          <div style="display:flex; gap:10px;">
+            <input id="check-user-name" type="text" placeholder="Ingresa tu nombre" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--color-border);">
+            <button id="btn-check-sub" class="btn-action" style="padding:10px;">Verificar</button>
+          </div>
+          <p id="sub-status-msg" class="text-muted" style="margin-top:8px; font-weight:600;"></p>
+        </section>
+
         <section id="menu-section" style="margin-bottom:28px;">
           <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px;">
             <div>
@@ -120,7 +131,7 @@
       }
 
       function formatearDuracion(minutos) {
-        return minutos ? `${minutos} min` : 'Por calcular';
+        return minutes ? `${minutos} min` : 'Por calcular';
       }
 
       function agruparPorHora(pedidos) {
@@ -190,11 +201,11 @@
       }
 
       async function reportarRetraso(idPedido) {
-        const minutosRetraso = Number(prompt('Ingresa los minutos de retraso adicionales:'));
-        if (!idPedido || Number.isNaN(minutosRetraso) || minutosRetraso <= 0) return;
+        const minutesRetraso = Number(prompt('Ingresa los minutos de retraso adicionales:'));
+        if (!idPedido || Number.isNaN(minutesRetraso) || minutesRetraso <= 0) return;
 
         try {
-          await actualizarRetrasoPedido(idPedido, minutosRetraso);
+          await actualizarRetrasoPedido(idPedido, minutesRetraso);
           alert('El retraso se actualizó correctamente.');
           if (typeof cargarResumenPedidos === 'function') cargarResumenPedidos();
         } catch (error) {
@@ -203,11 +214,11 @@
         }
       }
 
-      async function actualizarRetrasoPedido(idPedido, minutosRetraso) {
+      async function actualizarRetrasoPedido(idPedido, minutesRetraso) {
         const pedidoExistente = pedidosDiarios.find(p => p.ID_Pedido === idPedido || p.ID === idPedido);
         const distancia = Number(pedidoExistente?.Distancia_KM) || 0;
         const tiempoActual = Number(pedidoExistente?.Tiempo_Estimado_Min) || calcularTiempoEntrega(distancia) || 0;
-        const nuevoTiempo = tiempoActual + minutosRetraso;
+        const nuevoTiempo = tiempoActual + minutesRetraso;
 
         const res = await fetch(`${API_URL}/ID_Pedido/${idPedido}?sheet=Pedidos`, {
           method: 'PUT',
