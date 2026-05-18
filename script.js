@@ -36,9 +36,12 @@ async function verificarYActivarModo() {
             }
 
             usuarioLogueado = esSuscriptor.Nombre_vecino;
+            window.suscripcionActual = esSuscriptor;
             msg.textContent = `✅ Plan Semanal Activo. ¡Hola ${usuarioLogueado}! Tus platos hoy son gratis.`;
             msg.style.color = "var(--color-primary-dark)";
             renderMenu(menuData);
+            renderCuenta();
+            renderTracking();
         } else {
             usuarioLogueado = null;
             msg.textContent = "❌ No tienes una suscripción activa con ese nombre.";
@@ -157,6 +160,15 @@ async function actualizarEstadoSuscripcion(nombreVecino, nuevoEstado) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ data: { Estado_Suscripcion: nuevoEstado } })
+  });
+  return await res.json();
+}
+
+async function actualizarPlanSuscripcion(nombreVecino, nuevoPlan) {
+  const res = await fetch(`${API_URL}/Nombre_vecino/${nombreVecino}?sheet=Suscripciones`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: { Plan: nuevoPlan } })
   });
   return await res.json();
 }
@@ -384,7 +396,7 @@ function crearTarjetaPlato(plato) {
         <p class="text-muted">${plato.Categoria || 'General'}</p>
         <div class="card__footer">
           <span class="card__price">Bs ${usuarioLogueado ? "0" : (plato.Precio || '0')}</span>
-          <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio})">
+          <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio}, '${plato.ID || ''}')">
             ${usuarioLogueado ? "Gratis" : "+"}
           </button>
         </div>
@@ -440,7 +452,8 @@ function mostrarFeedback(mensaje, esError = false) {
   subscriptionFeedback.style.color = esError ? '#d64541' : 'var(--color-text-body)';
 }
 
-async function procesarPedidoRapido(nombrePlato, precioOriginal) {
+// Función mejorada para procesar pedidos desde el menú
+async function procesarPedidoRapido(nombrePlato, precioOriginal, idPlato = '') {
     let nombreCliente = usuarioLogueado;
     let precioFinal = usuarioLogueado ? 0 : precioOriginal;
 
@@ -449,27 +462,50 @@ async function procesarPedidoRapido(nombrePlato, precioOriginal) {
         if (!nombreCliente) return;
     }
 
+    // Obtener hora actual
+    const ahora = new Date();
+    const horaActual = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
+    // Generar distancia aleatoria (entre 1-6 km)
+    const distanciaAleatoria = (Math.random() * 5 + 1).toFixed(1);
+
+    // Calcular tiempo estimado
+    const tiempoEstimado = calcularTiempoEstimado(parseFloat(distanciaAleatoria));
+
     const nuevoPedido = {
-        ID_Pedido: Date.now(),
+        ID_Pedido: "P" + Date.now().toString().slice(-6),
         Nombre_Cliente: nombreCliente,
         Nombre_Plato: nombrePlato,
         Hora_Entrega: "Por confirmar",
         Fecha: new Date().toISOString().slice(0, 10),
-        Estado: "pendiente",
+        Estado: "Pendiente",
         Precio: precioFinal,
         ID_Repartidor: "",
-        Distancia_KM: "",
-        Tiempo_Estimado_Min: "",
-        Estado_Entrega: "Pendiente"
+        Distancia_KM: distanciaAleatoria,
+        Tiempo_Estimado_Min: tiempoEstimado,
+        Estado_Entrega: "Pendiente",
+        Hora_Creacion: horaActual
     };
 
     try {
-        alert("Enviando pedido...");
+        console.log("📦 Procesando pedido:", nuevoPedido);
         await crearPedido(nuevoPedido);
-        alert(`¡Pedido realizado! ${nombrePlato} por Bs ${precioFinal}`);
+        alert(`✅ ¡Pedido realizado!\n${nombrePlato}\nPrecio: Bs ${precioFinal}\nTiempo estimado: ${tiempoEstimado} min`);
+        
+        // Actualizar interfaz
         if(typeof cargarResumenPedidos === 'function') cargarResumenPedidos();
+        if(typeof renderTracking === 'function') renderTracking();
+        
+        // Disparar notificación
+        if(typeof dispararNotificacion === 'function') {
+            dispararNotificacion(
+                "🎉 ¡Pedido Confirmado!",
+                `${nombreCliente} ordenó: ${nombrePlato}`
+            );
+        }
     } catch (error) {
-        alert("Hubo un error al procesar el pedido.");
+        console.error("Error al procesar el pedido:", error);
+        alert("❌ Hubo un error al procesar el pedido. Intenta de nuevo.");
     }
 }
 
