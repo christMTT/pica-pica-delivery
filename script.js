@@ -9,7 +9,9 @@ const API_URL = "https://sheetdb.io/api/v1/iqzxj7h81qhi5";
 // =====================
 // MENÚ
 // =====================
-let usuarioLogueado = null;
+window.usuarioLogueado = null;
+window.suscripcionActual = null;
+window.menuData = [];
 
 // 1. Función para verificar si el usuario es suscriptor
 async function verificarYActivarModo() {
@@ -28,25 +30,25 @@ async function verificarYActivarModo() {
 
         if (esSuscriptor) {
             if (esSuscriptor.Estado_Suscripcion === "Pausado") {
-                usuarioLogueado = null;
+                window.usuarioLogueado = null;
                 msg.textContent = "⏸️ Tu suscripción está pausada. Contacta soporte para reactivarla.";
                 msg.style.color = "#e67e22";
-                renderMenu(menuData);
+                renderMenu(window.menuData);
                 return;
             }
 
-            usuarioLogueado = esSuscriptor.Nombre_vecino;
+            window.usuarioLogueado = esSuscriptor.Nombre_vecino;
             window.suscripcionActual = esSuscriptor;
-            msg.textContent = `✅ Plan Semanal Activo. ¡Hola ${usuarioLogueado}! Tus platos hoy son gratis.`;
+            msg.textContent = `✅ Plan Semanal Activo. ¡Hola ${window.usuarioLogueado}! Tus platos hoy son gratis.`;
             msg.style.color = "var(--color-primary-dark)";
-            renderMenu(menuData);
+            renderMenu(window.menuData);
             renderCuenta();
             renderTracking();
         } else {
-            usuarioLogueado = null;
+            window.usuarioLogueado = null;
             msg.textContent = "❌ No tienes una suscripción activa con ese nombre.";
             msg.style.color = "#d64541";
-            renderMenu(menuData);
+            renderMenu(window.menuData);
         }
     } catch (error) {
         msg.textContent = "Error al verificar. Intenta de nuevo.";
@@ -374,8 +376,6 @@ const subscriptionForm = document.getElementById('subscription-form');
 const subscriptionNameInput = document.getElementById('subscription-name');
 const subscriptionFeedback = document.getElementById('subscription-feedback');
 
-let menuData = [];
-
 function crearTarjetaPlato(plato) {
   const linkImagen = plato.Imagen_Url; 
   console.log("Cargando imagen para:", plato.Nombre, "URL:", linkImagen);
@@ -395,9 +395,9 @@ function crearTarjetaPlato(plato) {
         <h3 class="card__name">${plato.Nombre}</h3>
         <p class="text-muted">${plato.Categoria || 'General'}</p>
         <div class="card__footer">
-          <span class="card__price">Bs ${usuarioLogueado ? "0" : (plato.Precio || '0')}</span>
+          <span class="card__price">Bs ${window.usuarioLogueado ? "0" : (plato.Precio || '0')}</span>
           <button class="btn-add" onclick="procesarPedidoRapido('${plato.Nombre}', ${plato.Precio}, '${plato.ID || ''}')">
-            ${usuarioLogueado ? "Gratis" : "+"}
+            ${window.usuarioLogueado ? "Gratis" : "+"}
           </button>
         </div>
       </div>
@@ -437,9 +437,9 @@ function renderCategoryButtons(platos) {
 
       const categoria = button.dataset.categoria;
       if (categoria === 'Todos') {
-        renderMenu(menuData);
+        renderMenu(window.menuData);
       } else {
-        const filtrados = menuData.filter(plato => (plato.Categoria || '').toLowerCase() === categoria.toLowerCase());
+        const filtrados = window.menuData.filter(plato => (plato.Categoria || '').toLowerCase() === categoria.toLowerCase());
         renderMenu(filtrados);
       }
     });
@@ -454,10 +454,10 @@ function mostrarFeedback(mensaje, esError = false) {
 
 // Función mejorada para procesar pedidos desde el menú
 async function procesarPedidoRapido(nombrePlato, precioOriginal, idPlato = '') {
-    let nombreCliente = usuarioLogueado;
-    let precioFinal = usuarioLogueado ? 0 : precioOriginal;
+    let nombreCliente = window.usuarioLogueado;
+    let precioFinal = window.usuarioLogueado ? 0 : precioOriginal;
 
-    if (!usuarioLogueado) {
+    if (!window.usuarioLogueado) {
         nombreCliente = prompt("Ingresa tu nombre para el pedido:");
         if (!nombreCliente) return;
     }
@@ -519,9 +519,10 @@ document.addEventListener('DOMContentLoaded', () => {
 async function iniciarPagina() {
   try {
     const platos = await obtenerMenu();
-    menuData = Array.isArray(platos) ? platos : [];
-    renderCategoryButtons(menuData);
-    renderMenu(menuData);
+    window.menuData = Array.isArray(platos) ? platos : [];
+    console.log("📋 Menú cargado:", window.menuData);
+    renderCategoryButtons(window.menuData);
+    renderMenu(window.menuData);
   } catch (error) {
     console.error('Error cargando el menú:', error);
     if (menuContainer) {
